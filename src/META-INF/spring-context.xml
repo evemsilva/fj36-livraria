@@ -42,9 +42,9 @@
 	<bean id="mysqlDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
 		destroy-method="close">
 		<property name="driverClass" value="com.mysql.jdbc.Driver" />
-		<property name="jdbcUrl" value="jdbc:mysql://localhost/caelum-fj36" />
+		<property name="jdbcUrl" value="jdbc:mysql://localhost/fj36" />
 		<property name="user" value="root" />
-		<property name="password" value="" />
+		<property name="password" value="mysql" />
 
 		<property name="minPoolSize" value="2" />
 		<property name="maxPoolSize" value="5" />
