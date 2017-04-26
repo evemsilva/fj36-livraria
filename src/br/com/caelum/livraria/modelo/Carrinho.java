@@ -2,18 +2,21 @@ package br.com.caelum.livraria.modelo;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.net.MalformedURLException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import br.com.caelum.livraria.jms.EnviadorMensagemJms;
-import br.com.caelum.livraria.rest.ClienteRest;
+import br.com.caelum.estoque.rmi.EstoqueRmi;
+import br.com.caelum.estoque.rmi.ItemEstoque;
 
 @Component
 @Scope("session")
@@ -25,13 +28,6 @@ public class Carrinho implements Serializable {
 	private BigDecimal valorFrete = BigDecimal.ZERO;
 	private String cepDestino;
 	private Pagamento pagamento;
-
-	@Autowired
-	ClienteRest clienteRest;
-
-	@Autowired
-	EnviadorMensagemJms enviador;
-
 
 	public void adicionarOuIncremantarQuantidadeDoItem(Livro livro, Formato formato) {
 
@@ -67,8 +63,6 @@ public class Carrinho implements Serializable {
 		transacao.setNumero(numeroCartao);
 		transacao.setTitular(nomeTitular);
 		transacao.setValor(this.getTotal());
-
-		this.pagamento = this.clienteRest.criarPagamento(transacao);
 		
 		return this.pagamento;
 	}
@@ -83,10 +77,7 @@ public class Carrinho implements Serializable {
 		Pedido pedido = new Pedido();
 		pedido.setData(Calendar.getInstance());
 		pedido.setItens(new LinkedHashSet<>(this.itensDeCompra));
-
-		this.pagamento = this.clienteRest.confirmarPagamento(pagamento);
 		pedido.setPagamento(pagamento);
-		this.enviador.enviar(pedido);
 
 		this.limparCarrinho();
 
@@ -201,6 +192,19 @@ public class Carrinho implements Serializable {
 				codigos.add(item.getCodigo());
 		}
 		return codigos;
+	}
+
+	public void verificarDisponibilidadeDosItensComRmi() throws MalformedURLException, RemoteException, NotBoundException {	
+		EstoqueRmi estoque = (EstoqueRmi) Naming.lookup("rmi://localhost:1099/estoque");
+		
+		for (ItemCompra itemCompra : this.itensDeCompra) {
+			if (itemCompra.isImpresso()) {
+				System.out.println("Verificação da quantidade do livro: "+ itemCompra.getTitulo());
+				ItemEstoque itemEstoque = estoque.getItemEstoque(itemCompra.getCodigo());
+				itemCompra.setQuantidadeNoEstoque(itemEstoque.getQuantidade());
+			}
+		}
+		
 	}
 
 	
